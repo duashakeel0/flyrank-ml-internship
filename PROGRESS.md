@@ -8,10 +8,10 @@ Lane: **Refresh / Content Opportunity Scoring** (provisional, can change until e
 
 | # | Card | Week | Status | Notes |
 |---|---|---|---|---|
-| 1 | ML-02 — Research Question and Provisional Lane | 1 | Done, not yet submitted | `work/notebooks/w01_research_question.ipynb`; lane picked with real numbers from starter CSV |
-| 2 | ML-03 — Frame Your Lane as an ML Task | 2 | Done, not yet submitted | `work/notebooks/w02_ml_task_framing.ipynb`; ranking/scoring, Precision@50, real dataframe shown |
-| 3 | ML-04 — Search Intelligence Data Contract | 3 | Done, not yet submitted | `work/notebooks/w03_data_contract.ipynb`; real warehouse data (month=2026-03), leakage trap performed live: honest AUC 0.599 vs leaky 1.000 |
-| 4 | TBD | | Pending | |
+| 1 | ML-01 — Run the Starter Notebooks | 1 | Done, not yet submitted | `notebooks/01_first_look_and_discovery.ipynb` + `02_your_first_readable_model.ipynb`, both executed top to bottom with "your turn" cells; done after 2-4 below (assignments arrived out of order), backfilled 2026-08-15 |
+| 2 | ML-02 — Research Question and Provisional Lane | 1 | Done, not yet submitted | `work/notebooks/w01_research_question.ipynb`; lane picked with real numbers from starter CSV |
+| 3 | ML-03 — Frame Your Lane as an ML Task | 2 | Done, not yet submitted | `work/notebooks/w02_ml_task_framing.ipynb`; ranking/scoring, Precision@50, real dataframe shown |
+| 4 | ML-04 — Search Intelligence Data Contract | 3 | Done, not yet submitted | `work/notebooks/w03_data_contract.ipynb`; real warehouse data (month=2026-03), leakage trap performed live: honest AUC 0.599 vs leaky 1.000 |
 | 5 | TBD | | Pending | |
 
 ## Capstone
