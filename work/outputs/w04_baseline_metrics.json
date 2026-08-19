@@ -1,0 +1,80 @@
+{
+  "assignment": "ML-07 -- Baseline Action Score and Top-10 Review",
+  "notebook": "work/notebooks/w04_baseline_score.ipynb",
+  "rule": {
+    "plain_words": "stale (days_since_last_update >= 180) AND visible (impressions_90d >= 500), scored by impressions_90d",
+    "reason_code": "stale_but_visible",
+    "action": "review_for_refresh",
+    "inputs_used": [
+      "days_since_last_update",
+      "impressions_90d"
+    ],
+    "label_derived_inputs_used": []
+  },
+  "signal_checks": {
+    "signal_1_staleness_vs_decline": {
+      "verdict": "MIXED",
+      "buckets": [
+        {
+          "staleness_bucket": "<90d",
+          "n": 20655,
+          "decline_rate": 0.512
+        },
+        {
+          "staleness_bucket": "90-179d",
+          "n": 9171,
+          "decline_rate": 0.611
+        },
+        {
+          "staleness_bucket": "180-364d",
+          "n": 169,
+          "decline_rate": 0.467
+        },
+        {
+          "staleness_bucket": "365d+",
+          "n": 5,
+          "decline_rate": 0.6
+        }
+      ],
+      "note": "decline rate non-monotonic; top two buckets have very small n (169, 5)"
+    },
+    "signal_2_position_vs_ctr": {
+      "verdict": "CONFIRMED",
+      "buckets": [
+        {
+          "position_tier": "page_1",
+          "n": 8633,
+          "mean_ctr": 0.355
+        },
+        {
+          "position_tier": "top_3",
+          "n": 533,
+          "mean_ctr": 0.334
+        },
+        {
+          "position_tier": "striking",
+          "n": 5903,
+          "mean_ctr": 0.256
+        },
+        {
+          "position_tier": "page_3_5",
+          "n": 6058,
+          "mean_ctr": 0.142
+        },
+        {
+          "position_tier": "deep",
+          "n": 879,
+          "mean_ctr": 0.055
+        }
+      ],
+      "note": "monotonic decline in CTR from page_1 to deep, as the CTR-fix logic assumes"
+    }
+  },
+  "queue_summary": {
+    "total_rows": 30000,
+    "flagged_rows": 17,
+    "flagged_pct": 0.06
+  },
+  "weak_picks_found_in_top10": 0,
+  "leakage_check": "trend_direction/trend_pct not used as scoring inputs; confirmed in notebook section 4"
+}
