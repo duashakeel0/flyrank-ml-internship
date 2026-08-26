@@ -1,0 +1,81 @@
+{
+  "assignment": "ML-08 -- Capstone Modeling Lane",
+  "notebook": "work/notebooks/w05_model.ipynb",
+  "data": {
+    "source": "hf://datasets/FlyRank/internship-warehouse",
+    "tables": ["fact_content_daily_performance/month=2026-03", "dim_content"],
+    "feature_window": "2026-03-01 to 2026-03-15",
+    "target_window": "2026-03-16 to 2026-03-31",
+    "decision_point": "2026-03-15"
+  },
+  "bugs_found_and_fixed": [
+    {
+      "name": "point_in_time_leakage",
+      "description": "dim_content is a single latest-state snapshot (export date 2026-07-03), not point-in-time. days_since_last_update/content_age_days were computed against a decision point (March 15) using update/creation dates that could be AFTER that point, leaking future information.",
+      "fix": "dropped rows where days_since_last_update < 0 or content_age_days < 0",
+      "rows_dropped": 74624,
+      "rows_before": 92247,
+      "rows_after": 17623,
+      "pct_dropped": 80.9
+    },
+    {
+      "name": "nondeterministic_remote_row_order",
+      "description": "DuckDB does not guarantee row order on a remote parquet scan without ORDER BY, so .unique() and argsort tie-breaking were not actually deterministic despite a fixed numpy seed -- reruns produced different comparison tables.",
+      "fix": "sorted the client list before seeding the shuffle; used np.argsort(..., kind='stable') with a fixed row order (sorted by content_hash_id) for precision_at_k",
+      "verification": "3 independent full reruns (A/B/C) produced identical results"
+    },
+    {
+      "name": "baseline_never_fires_on_test_set",
+      "description": "The rescaled stale_but_visible baseline scored 0 of 1979 test rows above zero on the held-out client slice -- an all-tied, all-zero score array. Precision@K from it would measure row sort order, not the rule.",
+      "fix": "precision_at_k returns None (reported as N/A) when fewer than 1 score is nonzero, instead of a misleading number"
+    }
+  ],
+  "split": {
+    "strategy": "client_holdout",
+    "total_clients": 28,
+    "train_clients": 22,
+    "test_clients": 6,
+    "train_rows": 15644,
+    "test_rows": 1979,
+    "client_overlap": 0,
+    "seed": 42
+  },
+  "label": {
+    "name": "is_declining_label",
+    "definition": "impressions_h2 < impressions_h1 (Mar 16-31 impressions < Mar 1-15 impressions)",
+    "min_volume_filter": "impressions_h1 >= 50",
+    "base_rate_full_sample": 0.549,
+    "base_rate_test_set": 0.356
+  },
+  "features": ["impressions_h1", "clicks_h1", "avg_position_h1", "sessions_h1",
+               "engaged_sessions_h1", "days_since_last_update", "content_age_days", "word_count"],
+  "excluded_from_features": ["impressions_h2 (defines the label)", "client_hash_id/content_hash_id (context only)"],
+  "comparison": {
+    "baseline_rescaled_rule": {"precision_at_20": null, "precision_at_50": null, "note": "never fires on test set (0/1979 rows score > 0)"},
+    "logistic_regression": {"precision_at_20": 0.65, "precision_at_50": 0.46},
+    "random_forest": {"precision_at_20": 0.60, "precision_at_50": 0.64}
+  },
+  "chosen_model": "random_forest",
+  "chosen_model_rationale": "wins at P@50 (0.64 vs 0.46), loses narrowly at P@20 (0.60 vs 0.65); feature importances are directly readable, unlike reasoning about 8 interacting logistic coefficients",
+  "random_forest_feature_importances": {
+    "avg_position_h1": 0.244,
+    "impressions_h1": 0.201,
+    "content_age_days": 0.167,
+    "clicks_h1": 0.130,
+    "sessions_h1": 0.123,
+    "word_count": 0.103,
+    "engaged_sessions_h1": 0.016,
+    "days_since_last_update": 0.016
+  },
+  "errors": {
+    "false_positives": 222,
+    "false_negatives": 510,
+    "false_positive_pattern": "high-impression pages (4,461-16,986) flagged confidently (0.65-0.78) that turned out fine",
+    "false_negative_pattern": "low-volume pages (54-283 impressions) the model was uncertain about (0.32-0.35) that did decline"
+  },
+  "limitations": [
+    "test set is small: 1,979 rows across only 6 clients -- results describe this run, not a guaranteed property of the lane",
+    "staleness (days_since_last_update) carries almost no weight in the winning model, consistent with Week 4's MIXED verdict on the same signal",
+    "next step (Week 6 validation audit) should stress-test the client-holdout precision rather than take it at face value"
+  ]
+}
