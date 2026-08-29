@@ -4,7 +4,17 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Refresh &amp; Content Opportunity Scoring — Dua Shakeel</title>
-<meta name="description" content="A client-holdout-validated ranking model for content refresh prioritization, built on FlyRank's real search-analytics warehouse.">
+<meta name="description" content="A client-holdout-validated ranking model for content refresh prioritization, built on FlyRank's real search-analytics warehouse. Precision@50=0.64 -- and the 20-point gap a naive split would have hidden.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔎</text></svg>">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Refresh & Content Opportunity Scoring">
+<meta property="og:description" content="A client-holdout split changed the headline number from 0.84 down to an honest 0.64 -- on the exact same data. FlyRank ML Engineering Internship capstone.">
+<meta property="og:image" content="https://duashakeel0.github.io/flyrank-ml-internship/assets/og-card.png">
+<meta property="og:url" content="https://duashakeel0.github.io/flyrank-ml-internship/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Refresh & Content Opportunity Scoring">
+<meta name="twitter:description" content="A client-holdout split changed the headline number from 0.84 down to an honest 0.64 -- on the exact same data.">
+<meta name="twitter:image" content="https://duashakeel0.github.io/flyrank-ml-internship/assets/og-card.png">
 <style>
   :root {
     --ink: #1c1f1a;
@@ -40,6 +50,9 @@
   }
 
   * { box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+  section { scroll-margin-top: 24px; }
 
   body {
     margin: 0;
@@ -220,6 +233,43 @@
     border-radius: 5px;
     margin-bottom: 8px;
   }
+  .hero-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 40px;
+  }
+  .hero-stats .stat { background: var(--card); padding: 18px 16px; }
+  .hero-stats .n {
+    font-family: "Cascadia Code", "SF Mono", Consolas, monospace;
+    font-size: 24px; font-variant-numeric: tabular-nums; color: var(--accent);
+  }
+  .hero-stats .l { font-size: 12.5px; color: var(--muted); margin-top: 4px; line-height: 1.35; }
+
+  nav.toc {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 0;
+    font-family: "Cascadia Code", "SF Mono", Consolas, monospace;
+    font-size: 12.5px;
+    margin-bottom: 44px;
+    padding-bottom: 20px;
+    border-bottom: 1px dashed var(--line);
+  }
+  nav.toc a {
+    color: var(--muted);
+    text-decoration: none;
+    padding: 4px 12px 4px 0;
+    border-right: 1px solid var(--line);
+    margin-right: 12px;
+  }
+  nav.toc a:last-child { border-right: none; }
+  nav.toc a:hover { color: var(--accent); }
+
   .repro-list .desc {
     font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
     font-size: 14px;
@@ -257,6 +307,24 @@
       <span>2026-08-20</span>
     </div>
   </header>
+
+  <div class="hero-stats">
+    <div class="stat"><div class="n">0.64</div><div class="l">Precision@50, honest split</div></div>
+    <div class="stat"><div class="n">0.84</div><div class="l">Precision@50, dishonest split (same data)</div></div>
+    <div class="stat"><div class="n">9.8M</div><div class="l">warehouse rows queried</div></div>
+    <div class="stat"><div class="n">81%</div><div class="l">rows dropped fixing a real leak</div></div>
+  </div>
+
+  <nav class="toc">
+    <a href="#abstract">0 Abstract</a>
+    <a href="#intro">1 Introduction</a>
+    <a href="#data">2 Data</a>
+    <a href="#methodology">3 Methodology</a>
+    <a href="#results">4 Results</a>
+    <a href="#limitations">5 Limitations</a>
+    <a href="#recommendations">6 Recommendations</a>
+    <a href="#reproducibility">7 Reproducibility</a>
+  </nav>
 
   <section id="abstract">
     <h2><span class="num">0</span> Abstract</h2>
@@ -327,6 +395,24 @@
     <div class="callout warn">That gap is memorization, not skill. It's also the strongest evidence in this project for why the split strategy matters more than the model choice.</div>
 
     <p><strong>Leakage audit</strong>, repeated on the final 8-feature set: honest AUC 0.685 vs. leaky AUC 0.936 when a target-window column is deliberately added &mdash; confirming the test harness actually catches leakage, not just asserts it would.</p>
+
+    <p><strong>What the model actually leans on</strong> (Random Forest feature importances):</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Feature</th><th>Importance</th></tr></thead>
+        <tbody>
+          <tr><td><code>avg_position_h1</code></td><td>0.244</td></tr>
+          <tr><td><code>impressions_h1</code></td><td>0.201</td></tr>
+          <tr><td><code>content_age_days</code></td><td>0.167</td></tr>
+          <tr><td><code>clicks_h1</code></td><td>0.130</td></tr>
+          <tr><td><code>sessions_h1</code></td><td>0.123</td></tr>
+          <tr><td><code>word_count</code></td><td>0.103</td></tr>
+          <tr><td><code>engaged_sessions_h1</code></td><td>0.016</td></tr>
+          <tr><td><code>days_since_last_update</code></td><td>0.016</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>All plausible; none suspiciously dominant the way a leaked column would be (compare: the deliberately-leaked column above would sit near the top by a wide margin). The one genuine surprise: <code>days_since_last_update</code> &mdash; the "staleness" signal this lane is named after, and the exact feature a point-in-time bug had to be fixed to trust &mdash; ties for the <em>lowest</em> importance of all eight. That's not a one-off: Week 4's independent check on the starter dataset already returned a non-monotonic, <strong>MIXED</strong> verdict for staleness vs. decline rate. Two datasets, two methods, one consistent finding &mdash; position and current exposure carry the real weight here, not how long ago a page was touched.</p>
   </section>
 
   <section id="limitations">
