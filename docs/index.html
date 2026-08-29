@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Refresh &amp; Content Opportunity Scoring — Dua Shakeel</title>
+<meta name="description" content="A client-holdout-validated ranking model for content refresh prioritization, built on FlyRank's real search-analytics warehouse.">
+<style>
+  :root {
+    --ink: #1c1f1a;
+    --paper: #f4f5f2;
+    --card: #ffffff;
+    --muted: #5c6156;
+    --faint: #8b9083;
+    --line: rgba(28, 31, 26, 0.12);
+    --honest: #2e8468;
+    --dishonest: #a6431f;
+    --accent: #2e8468;
+    --code-bg: rgba(28, 31, 26, 0.05);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ink: #e9ebe4; --paper: #14170f; --card: #1b1f16; --muted: #a3a897;
+      --faint: #6f7566; --line: rgba(233, 235, 228, 0.14);
+      --honest: #4bb99b; --dishonest: #c96a41; --accent: #4bb99b;
+      --code-bg: rgba(233, 235, 228, 0.06);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ink: #e9ebe4; --paper: #14170f; --card: #1b1f16; --muted: #a3a897;
+    --faint: #6f7566; --line: rgba(233, 235, 228, 0.14);
+    --honest: #4bb99b; --dishonest: #c96a41; --accent: #4bb99b;
+    --code-bg: rgba(233, 235, 228, 0.06);
+  }
+  :root[data-theme="light"] {
+    --ink: #1c1f1a; --paper: #f4f5f2; --card: #ffffff; --muted: #5c6156;
+    --faint: #8b9083; --line: rgba(28, 31, 26, 0.12);
+    --honest: #2e8468; --dishonest: #a6431f; --accent: #2e8468;
+    --code-bg: rgba(28, 31, 26, 0.05);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 740px;
+    margin: 0 auto;
+    padding: 0 24px 96px;
+  }
+
+  header.masthead {
+    padding: 64px 0 40px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 40px;
+  }
+
+  .eyebrow {
+    font-family: "Cascadia Code", "SF Mono", Consolas, "Liberation Mono", monospace;
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--faint);
+    margin-bottom: 16px;
+  }
+
+  h1.title {
+    font-size: clamp(28px, 5vw, 40px);
+    line-height: 1.2;
+    margin: 0 0 20px;
+    text-wrap: balance;
+    font-weight: 600;
+  }
+
+  .byline {
+    font-family: "Cascadia Code", "SF Mono", Consolas, monospace;
+    font-size: 13px;
+    color: var(--muted);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 18px;
+  }
+
+  .byline a { color: var(--accent); }
+
+  section { margin: 48px 0; }
+
+  h2 {
+    font-size: 22px;
+    margin: 0 0 4px;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+  h2 .num {
+    font-family: "Cascadia Code", "SF Mono", Consolas, monospace;
+    font-size: 14px;
+    color: var(--faint);
+    font-weight: 400;
+  }
+
+  .section-sub {
+    color: var(--muted);
+    font-size: 15px;
+    margin: 0 0 20px;
+    font-style: italic;
+  }
+
+  p { margin: 0 0 16px; max-width: 65ch; }
+  ul, ol { margin: 0 0 16px; padding-left: 22px; }
+  li { margin-bottom: 8px; }
+
+  strong { font-weight: 700; }
+
+  code, .mono {
+    font-family: "Cascadia Code", "SF Mono", Consolas, "Liberation Mono", monospace;
+    font-size: 0.88em;
+    background: var(--code-bg);
+    padding: 0.1em 0.4em;
+    border-radius: 3px;
+  }
+
+  .abstract {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 24px 28px;
+    font-size: 16px;
+  }
+  .abstract p { margin-bottom: 0; max-width: none; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14.5px;
+    margin: 8px 0 20px;
+  }
+  th, td {
+    text-align: left;
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--line);
+    font-variant-numeric: tabular-nums;
+  }
+  th {
+    font-family: "Cascadia Code", "SF Mono", Consolas, monospace;
+    font-size: 11.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    font-weight: 600;
+  }
+  tr:last-child td { border-bottom: none; }
+  .table-wrap { overflow-x: auto; }
+
+  figure {
+    margin: 24px 0;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 16px;
+  }
+  figure img { width: 100%; height: auto; display: block; border-radius: 3px; }
+  figcaption {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 10px;
+    font-family: "Cascadia Code", "SF Mono", Consolas, monospace;
+  }
+
+  .callout {
+    border-left: 3px solid var(--accent);
+    padding: 4px 0 4px 18px;
+    margin: 20px 0;
+    color: var(--muted);
+    font-size: 15px;
+  }
+  .callout.warn { border-left-color: var(--dishonest); }
+
+  .stat-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    overflow: hidden;
+    margin: 20px 0;
+  }
+  .stat {
+    background: var(--card);
+    padding: 16px 14px;
+  }
+  .stat .n {
+    font-family: "Cascadia Code", "SF Mono", Consolas, monospace;
+    font-size: 22px;
+    font-variant-numeric: tabular-nums;
+  }
+  .stat .l { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+  a { color: var(--accent); text-decoration-thickness: 1px; }
+
+  .repro-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 20px;
+  }
+  .repro-list li {
+    font-family: "Cascadia Code", "SF Mono", Consolas, monospace;
+    font-size: 13.5px;
+    padding: 10px 14px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    margin-bottom: 8px;
+  }
+  .repro-list .desc {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    font-size: 14px;
+    color: var(--muted);
+    display: block;
+    margin-top: 4px;
+  }
+
+  footer {
+    margin-top: 64px;
+    padding-top: 28px;
+    border-top: 1px solid var(--line);
+    font-size: 14px;
+    color: var(--muted);
+  }
+  footer a { color: var(--accent); font-weight: 600; }
+
+  @media (max-width: 480px) {
+    header.masthead { padding: 40px 0 28px; }
+    section { margin: 36px 0; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="masthead">
+    <div class="eyebrow">FlyRank ML Engineering Internship &middot; Capstone</div>
+    <h1 class="title">Refresh &amp; Content Opportunity Scoring: what a client-holdout split actually buys you</h1>
+    <div class="byline">
+      <span>Dua Shakeel</span>
+      <span>&middot;</span>
+      <a href="https://github.com/duashakeel0/flyrank-ml-internship">Repository</a>
+      <span>&middot;</span>
+      <span>2026-08-20</span>
+    </div>
+  </header>
+
+  <section id="abstract">
+    <h2><span class="num">0</span> Abstract</h2>
+    <div class="abstract">
+      <p>Which pages should a content editor review first for refresh, given limited weekly capacity? This project builds a decision-support ranking on FlyRank's internship warehouse (March 2026, 9.8M daily rows, 519K content items), comparing a transparent rule baseline against Logistic Regression and Random Forest under a client-holdout split. The baseline never fired on the held-out test set at all; Random Forest reached Precision@50 = 0.64 against a base rate of 0.356, with <code>avg_position_h1</code> and <code>impressions_h1</code> as its leading features. A deliberate stress test found a naive random split would have reported Precision@50 = 0.84 on the same data &mdash; a 20-point gap attributable to client memorization, not real skill. The output is a ranked review queue with reason codes, meant to prioritize human attention, not to replace it.</p>
+    </div>
+  </section>
+
+  <section id="intro">
+    <h2><span class="num">1</span> Introduction &amp; problem statement</h2>
+    <p><strong>Decision:</strong> which pages an editor with limited weekly review capacity should look at first for refresh &mdash; rewrite, expand, protect, prune, or monitor.</p>
+    <p><strong>Unit of analysis:</strong> one content item, summarized over a 15-day feature window (March 1&ndash;15, 2026) with a label built from the following 16-day window (March 16&ndash;31).</p>
+    <p><strong>Cost of a wrong call:</strong> a false positive wastes scarce editor hours on a page that didn't need attention; a false negative lets a real decline continue unnoticed, a compounding cost. Because editor time is the scarce resource, Precision@K is the metric that matches the decision &mdash; not raw accuracy.</p>
+    <p><strong>Why ML helps:</strong> a hand-written rule baseline already exists for this lane and is genuinely readable, but it never fired at all on the held-out population. The pattern is real &mdash; Random Forest clears the base rate by a wide margin &mdash; but too spread across interacting signals for one or two thresholds to catch.</p>
+  </section>
+
+  <section id="data">
+    <h2><span class="num">2</span> Data</h2>
+    <p><strong>Source:</strong> <a href="https://huggingface.co/datasets/FlyRank/internship-warehouse">FlyRank/internship-warehouse</a> on Hugging Face (gated; free account + read token, never committed, read from an environment variable at runtime).</p>
+    <p><strong>Tables:</strong> <code>fact_content_daily_performance</code> (month=2026-03, 9,841,378 rows) and <code>dim_content</code> (519,606 rows). <strong>Windows:</strong> feature window March 1&ndash;15, target window March 16&ndash;31, decision point March 15, 2026.</p>
+    <p><strong>Deliberately excluded, with reasons:</strong></p>
+    <ul>
+      <li><code>sessions_ai</code> / <code>ai_*</code> columns &mdash; too sparse to be reliable at this scale (30,177 AI-session rows vs. 28.9M search-impression rows, checked directly in Week 1).</li>
+      <li>Any March 16&ndash;31 metric as a <em>feature</em> &mdash; that window defines the label. Demonstrated live, twice: honest AUC ~0.60&ndash;0.69 vs. leaky AUC 0.94&ndash;1.00 when a target-window column is deliberately added, then removed.</li>
+      <li>Rows where content metadata dates fell after the decision point &mdash; <code>dim_content</code> is a single latest-state snapshot (exported 2026-07-03), not point-in-time, so these dates could be reading the future. Dropping them removed <strong>81%</strong> of candidate rows &mdash; a real cost paid for honesty.</li>
+    </ul>
+    <p>IDs are pseudonymous and used only for joins/grouping, never as features. No client names, domains, URLs, or raw queries appear anywhere in this project.</p>
+  </section>
+
+  <section id="methodology">
+    <h2><span class="num">3</span> Methodology</h2>
+    <p><strong>Baseline, in plain words:</strong> a page is worth reviewing if it still has real search demand (<code>impressions_h1 &ge; 80</code>) <em>and</em> hasn't been touched in a long time (<code>days_since_last_update &ge; 180</code>), scored by exposure.</p>
+    <p><strong>Models:</strong> Logistic Regression first (readable), then Random Forest &mdash; with a pre-commitment to stop there unless Random Forest clearly earned its added complexity.</p>
+    <p><strong>Features (8), all knowable by the decision point:</strong> <code>impressions_h1</code>, <code>clicks_h1</code>, <code>avg_position_h1</code>, <code>sessions_h1</code>, <code>engaged_sessions_h1</code>, <code>days_since_last_update</code>, <code>content_age_days</code>, <code>word_count</code>.</p>
+    <p><strong>Target:</strong> <code>is_declining_label = 1</code> if a page's March 16&ndash;31 impressions are lower than its March 1&ndash;15 impressions, else 0 (minimum 50 impressions in the feature window to avoid labeling pure noise). A proxy, not a causal outcome.</p>
+    <p><strong>Split:</strong> client-holdout, not a random row split &mdash; 28 clients, 22 train / 6 test, zero client overlap verified. Rows from the same client likely share hidden structure a random split would let a model memorize instead of generalize from.</p>
+  </section>
+
+  <section id="results">
+    <h2><span class="num">4</span> Results</h2>
+    <p>The baseline scored <strong>zero of 1,979 test rows above zero</strong> &mdash; it never fires on this held-out population. Reporting a Precision@K from an all-tied score array would measure row order, not the rule, so it's reported as N/A rather than a number that looks real but isn't.</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Method</th><th>Precision@20</th><th>Precision@50</th></tr></thead>
+        <tbody>
+          <tr><td>Baseline (rescaled rule)</td><td>N/A</td><td>N/A</td></tr>
+          <tr><td>Logistic Regression</td><td>0.65</td><td>0.46</td></tr>
+          <tr><td><strong>Random Forest</strong></td><td>0.60</td><td><strong>0.64</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <figure>
+      <img src="assets/capstone_model_vs_baseline.png" alt="Bar chart comparing Precision@50 for the baseline (never fires), Logistic Regression (0.46), and Random Forest (0.64), against a base rate of 0.356">
+      <figcaption>Model vs. baseline, client-holdout test set (1,979 rows, 6 held-out clients, base rate 0.356)</figcaption>
+    </figure>
+
+    <p>Random Forest wins at K=50, loses narrowly at K=20 &mdash; reported as a real split result, not smoothed into one "winner."</p>
+
+    <p><strong>The split-honesty proof.</strong> The same model, on the same underlying data, was rerun under a naive random row split instead of the client-holdout split:</p>
+
+    <figure>
+      <img src="assets/capstone_split_honesty.png" alt="Bar chart showing Precision@50 of 0.840 under a naive random split versus 0.640 under the honest client-holdout split">
+      <figcaption>A 20-point gap on identical data &mdash; reproduced identically across 2 independent full reruns</figcaption>
+    </figure>
+
+    <div class="callout warn">That gap is memorization, not skill. It's also the strongest evidence in this project for why the split strategy matters more than the model choice.</div>
+
+    <p><strong>Leakage audit</strong>, repeated on the final 8-feature set: honest AUC 0.685 vs. leaky AUC 0.936 when a target-window column is deliberately added &mdash; confirming the test harness actually catches leakage, not just asserts it would.</p>
+  </section>
+
+  <section id="limitations">
+    <h2><span class="num">5</span> Limitations &amp; honest framing</h2>
+    <ul>
+      <li>Single month, single split; only 6 test clients &mdash; treat 0.64 as this run's evidence, not a guaranteed rate.</li>
+      <li><strong>Population selection gap:</strong> pages edited between March 15 and July are excluded entirely (a side effect of the point-in-time fix) &mdash; may under-represent decliners editors already caught and fixed.</li>
+      <li><strong>Staleness is a consistently weak signal.</strong> Across two independent checks &mdash; a starter-dataset bucket test (Week 4: non-monotonic, MIXED verdict) and this warehouse model (lowest of 8 feature importances) &mdash; <code>days_since_last_update</code> underperforms what the lane's own name suggests it should.</li>
+      <li><strong>Not causal.</strong> Cross-sectional data, no experiment. A flagged page means "worth a look," never "refreshing this will fix it."</li>
+      <li>Only 11 of 1,979 rows reach the high-confidence tier; most of the population sits in an ambiguous middle, reported as-is rather than adjusted to look more decisive.</li>
+    </ul>
+  </section>
+
+  <section id="recommendations">
+    <h2><span class="num">6</span> Ranked recommendations</h2>
+    <p>Built only from the validated 1,979-row test population &mdash; the one population the Precision@50=0.64 number actually describes.</p>
+
+    <div class="stat-row">
+      <div class="stat"><div class="n" style="color:var(--dishonest)">11</div><div class="l">prioritize_review (high confidence)</div></div>
+      <div class="stat"><div class="n">1,763</div><div class="l">monitor (medium confidence)</div></div>
+      <div class="stat"><div class="n" style="color:var(--honest)">205</div><div class="l">no_action_needed (low confidence)</div></div>
+    </div>
+
+    <figure>
+      <img src="assets/w07_action_tier_breakdown.png" alt="Bar chart of the action tier breakdown: 11 prioritize_review, 1763 monitor, 205 no_action_needed">
+      <figcaption>Action tier breakdown, held-out client test set</figcaption>
+    </figure>
+
+    <p>Reason codes among <code>prioritize_review</code> rows: <code>high_exposure_declining_risk</code> (9), <code>poor_position_declining_risk</code> (2) &mdash; both tied to the model's own top two features.</p>
+
+    <p><strong>Required before acting on any flagged row:</strong> a consolidation check (did a sibling page absorb the demand?), a seasonality check, a noise check on volume, and a sanity check that the underlying number actually supports the reason code assigned.</p>
+
+    <p><strong>Never automated:</strong> no auto-publishing from this queue; a flag is not proof of decline (roughly 1 in 3 flagged pages in this run were not actually declining); the queue never justifies removing a page or a client-level decision on its own.</p>
+  </section>
+
+  <section id="reproducibility">
+    <h2><span class="num">7</span> Reproducibility</h2>
+    <p>Every notebook below is committed with real, executed outputs visible on GitHub &mdash; not re-run copies.</p>
+    <ul class="repro-list">
+      <li>work/notebooks/w01_research_question.ipynb<span class="desc">Lane pick, backed by real numbers from the starter CSV</span></li>
+      <li>work/notebooks/w03_data_contract.ipynb<span class="desc">Data contract on real warehouse data; leakage trap performed live</span></li>
+      <li>work/notebooks/w05_model.ipynb<span class="desc">Model vs. baseline; the point-in-time leak and the reproducibility bug, both caught and fixed</span></li>
+      <li>work/notebooks/w06_validation_audit.ipynb<span class="desc">The before/after split-honesty proof; leakage re-test</span></li>
+      <li>work/notebooks/w07_action_playbook.ipynb<span class="desc">The ranked queue, reason codes, no-go list</span></li>
+      <li>work/notebooks/capstone.ipynb<span class="desc">This report, synthesized and verified against committed metrics</span></li>
+    </ul>
+    <p><strong>Seeds:</strong> <code>random_state=42</code> throughout. Reproducibility was not assumed &mdash; a real bug (DuckDB doesn't guarantee row order on a remote parquet scan) silently broke it once; fixed by sorting before seeding and using a stable sort, then verified identical across 3 independent full reruns.</p>
+    <p><strong>To reproduce:</strong> clone the repo, <code>pip install -r requirements.txt</code>, generate a Hugging Face read token, set it as an <code>HF_TOKEN</code> environment variable, run any notebook top to bottom.</p>
+  </section>
+
+  <footer>
+    Built on the FlyRank ML Internship dataset &mdash; <a href="https://flyrank.ai">flyrank.ai</a>
+  </footer>
+
+</div>
+</body>
+</html>
