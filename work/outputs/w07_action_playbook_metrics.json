@@ -1,0 +1,41 @@
+{
+  "assignment": "ML-10 -- Content Action Playbook",
+  "notebook": "work/notebooks/w07_action_playbook.ipynb",
+  "queue": {
+    "source_population": "client-holdout test set only (1,979 rows, 6 clients), the exact population Week 5/6's Precision@50=0.64 applies to",
+    "total_rows": 1979,
+    "action_counts": {"prioritize_review": 11, "monitor": 1763, "no_action_needed": 205},
+    "reason_codes_among_prioritize_review": {"high_exposure_declining_risk": 9, "poor_position_declining_risk": 2},
+    "base_rate": 0.356,
+    "validated_precision_at_50": 0.64,
+    "note": "Most rows cluster in the 'monitor' tier (89%) rather than the high-confidence prioritize_review tier (0.6%) -- the 0.65 probability threshold is conservative given the model's score distribution. Reported as-is rather than adjusting thresholds after seeing the split."
+  },
+  "action_tiers": {
+    "prioritize_review": {"threshold": ">= 0.65 probability", "confidence": "high"},
+    "monitor": {"threshold": "0.40-0.65 probability", "confidence": "medium"},
+    "no_action_needed": {"threshold": "< 0.40 probability", "confidence": "low"}
+  },
+  "human_review_required": [
+    "consolidation check (sibling page absorbed demand?)",
+    "seasonality check (calendar-driven dip?)",
+    "noise check (volume large enough to matter?)",
+    "position sanity check (does the reason code's underlying number actually look right?)"
+  ],
+  "no_go_list": [
+    "never auto-publish a content change from this queue",
+    "never treat prioritize_review as proof of decline (precision 0.64, ~1/3 flagged rows are false positives)",
+    "never use this queue to justify removing a page or deprioritizing a client",
+    "never skip the human-review checklist because the model score is high"
+  ],
+  "retrain_triggers": [
+    "Precision@50 on a fresh month falls meaningfully below ~0.5",
+    "base rate moves far outside the ~0.35-0.55 range seen across Weeks 5-7",
+    "client roster changes materially (new/departed clients not represented in training)",
+    "feature importance order changes from avg_position_h1/impressions_h1/content_age_days",
+    "minimum monthly re-validation cadence"
+  ],
+  "exports": {
+    "queue_csv": "work/outputs/action_playbook_queue.csv (gitignored, regenerates on run)",
+    "figure": "work/outputs/figures/w07_action_tier_breakdown.png (committed)"
+  }
+}
