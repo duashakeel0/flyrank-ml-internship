@@ -14,7 +14,7 @@ Lane: **Refresh / Content Opportunity Scoring** — locked as of Week 4 (this we
 | 4 | ML-04 — Search Intelligence Data Contract | 3 | Done, not yet submitted | `work/notebooks/w03_data_contract.ipynb`; real warehouse data (month=2026-03), leakage trap performed live: honest AUC 0.599 vs leaky 1.000 |
 | 5 | ML-07 — Baseline Action Score and Top-10 Review | 4 | Done, not yet submitted | `work/notebooks/w04_baseline_score.ipynb`; Signal 1 (staleness) MIXED, Signal 2 (position->CTR) CONFIRMED; 17/30,000 pages flagged; metrics in `work/outputs/w04_baseline_metrics.json` |
 
-**5 of 5 required ML assignments done** — certificate now needs only the capstone.
+**5 of 5 required ML assignments done, capstone deployed and live** — certificate requirement fully met as of 2026-08-29. Ready to submit.
 
 ## Capstone roadmap
 
@@ -22,10 +22,11 @@ Lane: **Refresh / Content Opportunity Scoring** — locked as of Week 4 (this we
 - [x] Phase 2 — Modeling (Week 5 / ML-08): `work/notebooks/w05_model.ipynb` — Random Forest (P@50=0.64) vs Logistic Regression (P@50=0.46) vs baseline (never fires, N/A) on real March 2026 warehouse data, client-holdout split. Caught + fixed real point-in-time leakage (dropped 81% of rows) and a real reproducibility bug (DuckDB remote row order). Metrics: `work/outputs/w05_model_metrics.json`
 - [x] Phase 3 — Validation (Week 6 / ML-09): `work/notebooks/w06_validation_audit.ipynb` — audited 2 FlyRank paper findings (selection bias, unstated split strategy); before/after split test confirmed a real 20-point P@50 gap between naive random split (0.840) and honest client-holdout (0.640) on my own model; re-ran the leakage test on Week 5's final features (honest 0.685 vs leaky 0.936); found a new named limitation (population selection excludes recently-edited pages). Metrics: `work/outputs/w06_validation_audit_metrics.json`
 - [x] Phase 4 — Action output (Week 7 / ML-10): `work/notebooks/w07_action_playbook.ipynb` — ranked queue built only from the validated client-holdout population (1,979 rows); reason codes tied to the model's own top features; action tiers (11 prioritize_review, 1,763 monitor, 205 no_action_needed — honestly reported concentration, not threshold-adjusted); human-review checklist + no-go list; retrain triggers. Figure + metrics: `work/outputs/figures/w07_action_tier_breakdown.png`, `work/outputs/w07_action_playbook_metrics.json`
-- [ ] Phase 5 — Capstone synthesis (Week 8 / ML-11 + ML-12): `work/notebooks/capstone.ipynb`, then the 8-section paper, deployed publicly (GitHub Pages recommended)
-- [ ] Phase 6 — Submission: `submission/paper_url.txt` at repo root (one line, the live paper URL), submit repo URL on the capstone card
+- [x] Phase 5 — Capstone synthesis (Week 8 / ML-11 + ML-12): `work/capstone_report.md` (full 9-section report) + `work/notebooks/capstone.ipynb` (verifies every number against committed metrics, generates the 2 headline figures) + ML-12 closing cells (demo outline, social cut, employer summary). Deployed as `docs/index.html` via GitHub Pages, verified live (HTTP 200, all 3 charts loading)
+- [x] Phase 6 — Submission: `submission/paper_url.txt` set to https://duashakeel0.github.io/flyrank-ml-internship/ — **capstone complete**
 
-- **Deliverable shape:** deployed public research paper + `submission/paper_url.txt` in the repo pointing at it
+- **Deployed paper:** https://duashakeel0.github.io/flyrank-ml-internship/
+- **Deliverable shape:** deployed public research paper + `submission/paper_url.txt` in the repo pointing at it — both done
 
 ## Data access
 
