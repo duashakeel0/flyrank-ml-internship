@@ -1,0 +1,44 @@
+{
+  "assignment": "ML-09 -- Validation and Research Claim Audit",
+  "notebook": "work/notebooks/w06_validation_audit.ipynb",
+  "paper_audit": [
+    {
+      "finding": "Finding #4 -- The Freshness Multiplier (3.2x health, 57x impressions)",
+      "question": "paired before/after per page, or cross-sectional comparison? If cross-sectional, editor selection bias (refreshing already-promising pages) could explain most of the gap without a causal refresh effect."
+    },
+    {
+      "finding": "ML Appendix -- What Predicts Growth? (71% holdout accuracy, logistic regression)",
+      "question": "was the reported 80/20 split grouped by brand, or a plain random row split? Only 57 brands in the dataset -- a random split risks brand memorization inflating holdout accuracy, per the finding below."
+    }
+  ],
+  "before_after_split_comparison": {
+    "description": "Same modeling frame, same Random Forest, two different splits",
+    "before_random_row_split": {
+      "test_rows": 3525,
+      "base_rate": 0.550,
+      "precision_at_50": 0.840
+    },
+    "after_client_holdout_split": {
+      "test_rows": 1979,
+      "base_rate": 0.356,
+      "precision_at_50": 0.640
+    },
+    "gap": 0.200,
+    "interpretation": "The random split scores 20 points higher at P@50 than the honest client-holdout split on the exact same underlying data -- direct empirical evidence of memorization, and direct support for the methodology question raised against the FlyRank paper's own unstated split strategy.",
+    "reproducibility": "identical results across 2 independent full reruns"
+  },
+  "leakage_audit": {
+    "checklist_status": "8 of 9 items directly confirmed YES; population-selection item resolved as a new named limitation (see below), not a pass/fail",
+    "live_retest_on_week5_final_features": {
+      "honest_auc_8_features": 0.685,
+      "leaky_auc_8_features_plus_impressions_h2": 0.936,
+      "gap": 0.251,
+      "test_harness_working": true
+    },
+    "new_limitation_found": "Week 5's leakage fix (dropping rows with future-dated content_updated_date) means the modeling population is, by construction, pages NOT edited between March 15 and July. If editors preferentially refresh pages they already believe are declining, this population choice may under-represent true decliners -- a selection effect, not classic leakage, disclosed as a named limitation rather than fixed (would require point-in-time content history dim_content doesn't provide)."
+  },
+  "claim_rewrite": {
+    "original": "Random Forest wins at P@50 (0.64 vs 0.46) but loses at P@20 (0.60 vs 0.65).",
+    "rewritten": "On this run's client-holdout test set (1,979 rows, 6 held-out clients), Random Forest was observed to score higher than Logistic Regression at Precision@50 (0.64 vs 0.46) and lower at Precision@20 (0.60 vs 0.65). This is decision-support evidence for Random Forest's precision profile at K=50 specifically, not a general claim that Random Forest is the better model."
+  }
+}
