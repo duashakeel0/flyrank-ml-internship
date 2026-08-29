@@ -20,7 +20,7 @@ Lane: **Refresh / Content Opportunity Scoring** — locked as of Week 4 (this we
 
 - [x] Phase 1 — Foundations (Weeks 1-4): ML-01, 02, 03, 04, 07 — all done above, lane locked
 - [x] Phase 2 — Modeling (Week 5 / ML-08): `work/notebooks/w05_model.ipynb` — Random Forest (P@50=0.64) vs Logistic Regression (P@50=0.46) vs baseline (never fires, N/A) on real March 2026 warehouse data, client-holdout split. Caught + fixed real point-in-time leakage (dropped 81% of rows) and a real reproducibility bug (DuckDB remote row order). Metrics: `work/outputs/w05_model_metrics.json`
-- [ ] Phase 3 — Validation (Week 6 / ML-09): `work/notebooks/w06_validation_audit.ipynb` — stress-test the client-holdout precision (Week 5 flagged only 6 test clients as a real limitation)
+- [x] Phase 3 — Validation (Week 6 / ML-09): `work/notebooks/w06_validation_audit.ipynb` — audited 2 FlyRank paper findings (selection bias, unstated split strategy); before/after split test confirmed a real 20-point P@50 gap between naive random split (0.840) and honest client-holdout (0.640) on my own model; re-ran the leakage test on Week 5's final features (honest 0.685 vs leaky 0.936); found a new named limitation (population selection excludes recently-edited pages). Metrics: `work/outputs/w06_validation_audit_metrics.json`
 - [ ] Phase 4 — Action output (Week 7 / ML-10): `work/notebooks/w07_action_playbook.ipynb` — ranked recommendations with reason codes from the validated model
 - [ ] Phase 5 — Capstone synthesis (Week 8 / ML-11 + ML-12): `work/notebooks/capstone.ipynb`, then the 8-section paper, deployed publicly (GitHub Pages recommended)
 - [ ] Phase 6 — Submission: `submission/paper_url.txt` at repo root (one line, the live paper URL), submit repo URL on the capstone card
